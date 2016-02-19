@@ -90,4 +90,86 @@ Uso o CTRL+SHIFT+O para importar a anotação. Dentro desse código de teste que
 Client client = ClientBuilder.newClient();
 </code>
 
+Ao importar novamente com CTRL+SHIFT+O lembre-se de escolher a classe Client do pacote javax.ws. Agora que temos um cliente, queremos usar uma URI base,a URI do servidor, para fazer várias requisições. No nosso caso é a URI do servidor que estamos utilizando, o www.mocky.io, portanto dizemos ao nosso cliente que trabalharemos com o alvo <a href="http://www.mocky.io"></a>:
 
+<code>
+Client client = ClientBuilder.newClient();
+WebTarget target = client.target("http://www.mocky.io");
+</code>
+
+Legal, vamos agora dizer que queremos fazer uma requisição para uma URI específica, target, por favor, para esse path '/v2/52aaf5deee7ba8c70329fb7d' faça uma requisição, e a requisição que faremos é a mais básica, a que pega dados do servidor, o método get:
+
+<code>
+Client client = ClientBuilder.newClient();
+WebTarget target = client.target("http://www.mocky.io");
+target.path("/v2/52aaf5deee7ba8c70329fb7d").request().get();
+</code>
+
+Mas se fazemos uma requisição get, estamos interessado nos dados que foram devolvidos pelo servidor, portanto ele devolve uma resposta, mas dessa vez estamos interessados somente na String que ele nos devolve, portanto passamos uma String.class para que ao executar o método get e receber os resultados, ele converta o corpo da resposta em uma String, algo bem simples, e devolva essa String para nós:
+
+<code>
+Client client = ClientBuilder.newClient();
+WebTarget target = client.target("http://www.mocky.io");
+String conteudo = target.path("/v2/52aaf5deee7ba8c70329fb7d").request().get(String.class);
+</code>
+
+Após fazer a requisição, o cliente devolve o conteúdo para nós. Queremos agora ter certeza que o conteúdo contem a 'Rua Vergueiro 3185', que ela contem o pedaço do xml que nos interessa. Nesse caso estou dizendo que somente estou interessado na rua:
+
+<code>
+Client client = ClientBuilder.newClient();
+WebTarget target = client.target("http://www.mocky.io");
+String conteudo = target.path("/v2/52aaf5deee7ba8c70329fb7d").request().get(String.class);
+Assert.assertTrue(conteudo.contains("Rua Vergueiro 3185"));
+</code>
+
+Como esse pedaço do xml começa com a tag deixarei isto bem claro em nosso assert:
+
+<code>
+Client client = ClientBuilder.newClient();
+WebTarget target = client.target("http://www.mocky.io");
+String conteudo = target.path("/v2/52aaf5deee7ba8c70329fb7d").request().get(String.class);
+Assert.assertTrue(conteudo.contains("<rua>Rua Vergueiro 3185"));
+</code>
+
+Só estou verificando que um pedaço do xml está lá dentro, qual o motivo? Pois só estou interesado em saber se a conexão com o servidor está funcionando. Rodamos o teste clicando da direita, 'Run as', 'JUnit test', e o resultado é verde!
+
+<img src="http://caelum-online-public.s3.amazonaws.com/JAX-RS/Screenshot%20from%202014-04-23%2015:13:52.png">
+
+Claro, meu cliente poderia executar o que eu tivesse interesse, verificando todo o xml ou qualquer coisa do genero, mas nosso teste por enquanto se baseia em garantir que somos capazes de, como clientes, acessar o servidor e extrair as informações de um recurso. E ele passa! Só para garantir que o XML retornado era o que esperava, vamos rodar uma vez um Sysout:
+
+<code>
+@Test
+public void testaQueAConexaoComOServidorFunciona() {
+	Client client = ClientBuilder.newClient();
+	WebTarget target = client.target("http://www.mocky.io");
+	String conteudo = target.path("/v2/52aaf5deee7ba8c70329fb7d").request().get(String.class);
+	System.out.println(conteudo);
+	Assert.assertTrue(conteudo.contains("Rua Vergueiro 3185"));
+}
+</code>
+
+E o resultado no console é o que esperávamos:
+
+<xml>
+<carrinho>
+    <produtos>
+        <produto>
+            <id>6237</id>
+            <quantidade>1</quantidade>
+            <nome>Videogame 4</nome>
+            <preco>4000</preco>
+        </produto>
+        <produto>
+            <id>3467</id>
+            <quantidade>2</quantidade>
+            <nome>Jogo de esporte</nome>
+            <preco>120</preco>
+        </produto>
+    </produtos>
+    <total>4120</total>
+    <entrega>
+        <rua>Rua Vergueiro 3185, 8 andar</rua>
+        <cidade>São Paulo</cidade>
+    </entrega>
+</carrinho>
+</xml>
