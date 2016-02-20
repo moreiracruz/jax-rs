@@ -150,7 +150,7 @@ public void testaQueAConexaoComOServidorFunciona() {
 
 E o resultado no console é o que esperávamos:
 
-<xml>
+<code>
 <carrinho>
     <produtos>
         <produto>
@@ -172,4 +172,210 @@ E o resultado no console é o que esperávamos:
         <cidade>São Paulo</cidade>
     </entrega>
 </carrinho>
-</xml>
+</code>
+
+Removemos o Sysout e continuamos. O cliente funciona como esperávamos, ele acessa um servidor do outro lado do mundo e extrai as informações que queremos. Mas nesse curso queremos escrever não só clientes e testes automatizados, queremos escrever também o código do servidor. Então vamos escrever nosso servidor! Primeiro escrevemos o servidor em si.
+
+Vamos olhar nossos pacotes? Dentro do pacote de modelo temos a classe Carrinho, que tem uma lista de produtos, a rua, a cidade e um id. Já o Produto tem o preço, o id, o nome e a quantidade. Temos essas duas classes, bonitas, mas quero fazer agora uma classe que representa um carrinho na internet, um recurso que vai devolver o XML de um carrinho. Eu já tenho o modelo, tenho um DAO que acessa o banco de dados em memória (você pode usar outra biblioteca para acessar seu banco, sinta-se a vontade quando escrever seu próprio projeto, claro). Com o CarrinhoDAO busco o carrinho, e já temos o carrinho de ID 1, que tem alguns produtos. Quero criar agora a classe que representa o recurso, que busca os dados no banco de dados (usando o DAO) e transforma em XML para mostrar ao cliente. Quero criar um recurso web. Vou criar no pacote <code>resource</code> uma classe chamada <code>CarrinhoResource</code>. Todo <code>Resource</code> do JAX-RS será anotado com a anotação <code>Path</code>, para dizer qual a URI que acessará esses recursos, no nosso caso queremos '<a href="http://servidor/carrinhos"></a>', isto é '/carrinhos', portanto escrevemos somente 'carrinhos':
+
+<code>
+@Path("carrinhos")
+public class CarrinhoResource {
+
+}
+</code>
+
+Vou colocar meu método que busca carrinhos:
+
+<code>
+public void busca() {
+
+}
+</code>
+
+E o que ele vai fazer? Buscar o carrinho de ID 1:
+
+<code>
+public void busca() {
+	Carrinho carrinho = new CarrinhoDAO().busca(1l);
+}
+</code>
+
+E o que vamos retornar? Queremos devolver uma representação deste carrinho em XML, portanto retornamos o carrinho em sua versão XML:
+
+<code>
+public void busca() {
+	Carrinho carrinho = new CarrinhoDAO().busca(1l);
+	return carrinho.toXML();
+}
+</code>
+
+Então tanto no cliente podemos trabalhar com a String de xml em si, aqui podemos também devolver em nosso método uma String xml, que será retornada para o cliente. Sinta-se a vontade. Para serializar nosso objeto em XML você pode usar qualquer biblioteca que achar interessante, no nosso caso usaremos primeiro nossa própria biblioteca. Primeiro alteramos o retorno do método para String:
+
+<code>
+public String busca() {
+	Carrinho carrinho = new CarrinhoDAO().busca(1l);
+	return carrinho.toXML();
+}
+</code>
+
+Mas já que o método devolve uma String, como o servidor será capaz de dizer ao cliente que o que está sendo devolvido, aquilo que está sendo produzido, é um XML e não um JSON, por exemplo? O que o método produz? Devemos dizer que o que será produzido é um XML:
+
+<code>
+@Produces(MediaType.APPLICATION_XML)
+public String busca() {
+	Carrinho carrinho = new CarrinhoDAO().busca(1l);
+	return carrinho.toXML();
+}
+</code>
+
+Falamos que o método gera APPLICATION_XML, mas também devemos falar que ele será acessado via GET, o método tradicional para buscar informações do servidor para o cliente:
+
+<code>
+@GET
+@Produces(MediaType.APPLICATION_XML)
+public String busca() {
+	Carrinho carrinho = new CarrinhoDAO().busca(1l);
+	return carrinho.toXML();
+}
+</code>
+
+Agora estamos prontos para criar o método <code>toXML</code> em nosso <code>Carrinho</code>:
+
+<code>
+public String toXML() {
+	return null;
+}
+</code>
+
+Escrevemos aí o que desejamos, usamos uma biblioteca maluca, o XStream, o JAXB, concatenar String, o que você quiser! Para mostrar que podemos usar qualquer biblioteca, nesse primeiro exemplo usaremos o XStream:
+
+<code>
+public String toXML() {
+	return new XStream().toXML(this);
+}
+</code>
+
+O XStream usará o padrão dele, mas podemos fazer aqui o que bem desejar. Se tiver interesse, você pode ver mais sobre como configurar o XStream no curso dele, já que aqui focaremos na parte de nossos webservices. Nosso código está pronto, agora basta levantar o servidor. Levante o servidor. Mas qual servidor? Onde está ele? Precisamos do servidor!
+
+Como levantar um servidor com Jersey logo de cara? A maneira mais simples de todas é criar uma classe para nosso servidor, dentro do pacote <code>br.com.alura.loja</code> vou criar uma classe chamada Servidor. Ela terá o método <code>main</code>:
+
+<code>
+package br.com.alura.loja;
+
+public class Servidor {
+
+	public static void main(String[] args) {
+
+	}
+
+}
+</code>
+
+Dentro do método <code>main</code> quero levantar um servidor do Grizzly, compatível com JAX-RS, servlet api e muito mais:
+
+<code>
+HttpServer server = GrizzlyHttpServerFactory.createHttpServer();
+</code>
+
+Mas tenho que falar qual a uri e a porta que desejo abrir meu servidor, para isso passo como parâmetro essa URI:
+
+<code>
+package br.com.alura.loja;
+
+import java.net.URI;
+
+import org.glassfish.grizzly.http.server.HttpServer;
+import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
+
+public class Servidor {
+
+	public static void main(String[] args) {
+		URI uri = URI.create("http://localhost:8080/");
+		HttpServer server = GrizzlyHttpServerFactory.createHttpServer(uri);
+	}
+
+}
+</code>
+
+Estamos rodando na porta 8080 pois é o padrão de servlet containers e não precisamos nos preocupar com permissões de admin para a porta 80. Criamos o servidor, mas como o Grizzly será capaz de entender que nossa aplicação é baseada em JAX-RS e não em servlet-api? Como ele saberá onde procurar nossa aplicação e o que utilizar? Precisamos passar uma configuração para o grizzly, vamos lá?
+
+<code>
+HttpServer server = GrizzlyHttpServerFactory.createHttpServer(uri, config);
+</code>
+
+Criamos então uma configuração:
+
+<code>
+ResourceConfig config = new ResourceConfig();
+</code>
+
+E falamos que desejamos buscar no pacote <code>br.com.alura.loja</code>, tudo que tem aí dentro, quero que você busque como JAX-RS e utilize como serviço:
+
+<code>
+ResourceConfig config = new ResourceConfig().packages("br.com.alura.loja");
+</code>
+
+Podemos agora imprimir uma mensagem que nosso servidor está no ar:
+
+<code>
+System.out.println("Servidor rodando");
+</code>
+
+E paramos o servidor quando o usuário apertar enter:
+
+<code>
+System.in.read();
+server.stop();
+</code>
+
+Nosso código main final possui somente quatro linhas de código para levantar e parar o nosso servidor web, além de informações de sysout:
+
+<code>
+public class Servidor {
+
+	public static void main(String[] args) throws IOException {
+		ResourceConfig config = new ResourceConfig().packages("br.com.alura.loja");
+		URI uri = URI.create("http://localhost:8080/");
+		HttpServer server = GrizzlyHttpServerFactory.createHttpServer(uri, config);
+		System.out.println("Servidor rodando");
+		System.in.read();
+		server.stop();
+	}
+
+}
+
+
+</code>
+
+Claro, poderia extrair tudo isso e colocar em uma aplicação web, mas o Jersey permite a utilização ainda mais simples: basta levantar o Grizzly. Rodo a aplicação clicando da direita no servidor, Run as, Java Application. E agora vejo a mensagem no console de que o Servidor rodando. Vou no navegador e acesso http://localhost:8080/carrinhos. O resultado é o xml:
+
+<code>
+<br.com.alura.loja.modelo.Carrinho>
+	<produtos>
+		<br.com.alura.loja.modelo.Produto>
+			<preco>4000.0</preco>
+			<id>6237</id>
+			<nome>Videogame 4</nome>
+			<quantidade>1</quantidade>
+		</br.com.alura.loja.modelo.Produto>
+		<br.com.alura.loja.modelo.Produto>
+			<preco>60.0</preco>
+			<id>3467</id>
+			<nome>Jogo de esporte</nome>
+			<quantidade>2</quantidade>
+		</br.com.alura.loja.modelo.Produto>
+	</produtos>
+	<rua>Rua Vergueiro 3185, 8 andar</rua>
+	<cidade>S?o Paulo</cidade>
+	<id>1</id>
+</br.com.alura.loja.modelo.Carrinho>
+</code>
+
+E esse XML é exatamente o XML que o XStream retornou em nosso servidor. Lembrando que se você quiser configurar o XStream ou usar JAX-B ou qualquer outra biblioteca de outros media types e formatos, sinta-se a vontade para em produção alterar seu código.
+
+Em aplicações modernas é comum que façamos a comunicação entre diversas aplicações, e a aplicação de hoje em dia costuma fazer isso através da web, mas não só através, ela usa a web, ela está na web, utilizando o protocolo HTTP. Os web services do REST servem para fazer isso de maneira mais inteligente, utilizando diversas vantagens do protocolo, e a primeira das características que vimos é a Addressability, que todo recurso (por exemplo um carrinho) tem um endereço de identificação, uma URI, se eu entregar essa URI para o João ou para a Maria, ambos tem acesso ao mesmo carrinho. A URI identifica o recurso, e não o usuário que identifica o carrinho que está sendo acessado. Com o REST usamos a URI para identificar o recurso.
+
+A segunda característica importante é que o XML ou qualquer outro dado sendo jogado de um lado para o outro não é o carrinho, não é o recurso, mas sim uma representação de nosso recurso.
+
+E agora como eu testo para ver se está tudo funcionando? No próximo capítulo veremos como criar um teste REST, um teste que levanta seu servidor, executa o teste, garante que o resultado é o esperado, e então derruba o servidor: um teste end-to-end de um serviço rest.
