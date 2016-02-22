@@ -2,7 +2,10 @@ package br.com.alura.loja;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.junit.After;
@@ -12,6 +15,7 @@ import org.junit.Test;
 
 import com.thoughtworks.xstream.XStream;
 
+import br.com.alura.loja.modelo.Carrinho;
 import br.com.alura.loja.modelo.Projeto;
 
 public class ProjetoTest {
@@ -33,10 +37,25 @@ public class ProjetoTest {
 		
 		Client client = ClientBuilder.newClient();
 		WebTarget target = client.target("http://localhost:80");
-		String content = target.path("projeto").request().get(String.class);
+		String content = target.path("projeto/1").request().get(String.class);
 		Projeto projeto = (Projeto) new XStream().fromXML(content);
 		Assert.assertEquals("Paulo André Moreira Cruz", projeto.getNome());
 		
+	}
+
+	@Test
+	public void adicionar() {
+		Client client = ClientBuilder.newClient();
+		WebTarget target = client.target("http://localhost");
+		
+		Projeto projeto = new Projeto(2L, "João Ricardo", 2002);	
+		
+		String xml = new XStream().toXML(projeto);
+		
+		Entity<String> entity = Entity.entity(xml, MediaType.APPLICATION_XML);
+		
+		Response response = target.path("/projeto").request().post(entity);
+        Assert.assertEquals(201, response.getStatus());
 	}
 
 }
