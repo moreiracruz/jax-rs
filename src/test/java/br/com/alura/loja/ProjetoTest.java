@@ -15,7 +15,6 @@ import org.junit.Test;
 
 import com.thoughtworks.xstream.XStream;
 
-import br.com.alura.loja.modelo.Carrinho;
 import br.com.alura.loja.modelo.Projeto;
 
 public class ProjetoTest {
@@ -37,22 +36,22 @@ public class ProjetoTest {
 		
 		Client client = ClientBuilder.newClient();
 		WebTarget target = client.target("http://localhost:80");
-		String content = target.path("projeto/1").request().get(String.class);
-		Projeto projeto = (Projeto) new XStream().fromXML(content);
+
+		Projeto projeto = target.path("projeto/1").request().get(Projeto.class);
+		
 		Assert.assertEquals("Paulo André Moreira Cruz", projeto.getNome());
 		
 	}
 
 	@Test
 	public void adicionar() {
+		
 		Client client = ClientBuilder.newClient();
 		WebTarget target = client.target("http://localhost");
 		
 		Projeto projeto = new Projeto(2L, "João Ricardo", 2002);	
 		
-		String xml = new XStream().toXML(projeto);
-		
-		Entity<String> entity = Entity.entity(xml, MediaType.APPLICATION_XML);
+		Entity<Projeto> entity = Entity.entity(projeto, MediaType.APPLICATION_XML);
 		
 		Response response = target.path("/projeto").request().post(entity);
         Assert.assertEquals(201, response.getStatus());

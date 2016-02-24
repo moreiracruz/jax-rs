@@ -1,7 +1,5 @@
 package br.com.alura.loja;
 
-import java.util.List;
-
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -44,8 +42,7 @@ public class CarrinhoTest {
 	@Test
 	public void buscar() {
 		
-		String content = target.path("carrinhos/1").request().get(String.class);
-		Carrinho carrinho = (Carrinho) new XStream().fromXML(content);
+		Carrinho carrinho = target.path("carrinhos/1").request().get(Carrinho.class);
 		Assert.assertEquals("Rua Vergueiro 3185, 8 andar", carrinho.getRua());
 	}
 
@@ -57,9 +54,7 @@ public class CarrinhoTest {
 		carrinho.setCidade("João Pessoa");
 		carrinho.setRua("Rua Joana Morais Lordão, 184");
 		
-		String xml = new XStream().toXML(carrinho);
-		
-		Entity<String> entity = Entity.entity(xml, MediaType.APPLICATION_XML);
+		Entity<Carrinho> entity = Entity.entity(carrinho, MediaType.APPLICATION_XML);
 		
 		Response response = target.path("/carrinhos").request().post(entity);
         Assert.assertEquals(201, response.getStatus());
@@ -75,8 +70,7 @@ public class CarrinhoTest {
 	@Test
 	public void alterar() {
 		
-		String content = target.path("/carrinhos/1").request().get(String.class);
-		Carrinho carrinho = (Carrinho) new XStream().fromXML(content);
+		Carrinho carrinho = target.path("/carrinhos/1").request().get(Carrinho.class);
 		
 		for ( Produto produto : carrinho.getProdutos() ) {
 			
@@ -86,27 +80,11 @@ public class CarrinhoTest {
 			
 		}
 		
-		String xml = new XStream().toXML(carrinho);
-		
-		Entity<String> entity = Entity.entity(xml, MediaType.APPLICATION_XML);
+		Entity<Carrinho> entity = Entity.entity(carrinho, MediaType.APPLICATION_XML);
 
 		Response response = target.path("/carrinhos/1/produtos/6237").request().put(entity);
         Assert.assertEquals(200, response.getStatus());	
         
-        /**
-         * Carrinho carrinho = new Carrinho();
-		carrinho.setId(2L);
-		carrinho.setCidade("João Pessoa");
-		carrinho.setRua("Rua Joana Morais Lordão, 184");
-		
-		String xml = new XStream().toXML(carrinho);
-		
-		Entity<String> entity = Entity.entity(xml, MediaType.APPLICATION_XML);
-		
-		Response response = target.path("/carrinhos").request().post(entity);
-        Assert.assertEquals(201, response.getStatus());
-         */
-		
 	}
 
 }
